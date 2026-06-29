@@ -1,0 +1,21 @@
+{
+  "name": "fitness-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fitness platform — exercise (gym/home/yoga) done right + nutrition. Monorepo.",
+  "packageManager": "pnpm@10.13.1",
+  "engines": {
+    "node": ">=20.19 <21",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
+  },
+  "devDependencies": {}
+}

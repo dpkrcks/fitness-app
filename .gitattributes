@@ -1,0 +1,14 @@
+# Normalize line endings to LF for all text files (consistent across Windows/macOS/Linux)
+* text=auto eol=lf
+
+# Binary assets — never normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.glb binary
+*.gltf binary
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
