@@ -9,9 +9,19 @@
 - Keep this honest: a half-finished task is `🟡`, not `[x]`.
 
 ## Current focus
-> **Phase:** Phase 0 — Foundation
-> **Status:** Monorepo skeleton + deps installed and pinned. `@fit/shared-types` **builds (ESM+CJS+d.ts) and tests pass (5/5)**. TypeScript pinned to 5.9.3 (TS6 backed out for tooling compatibility).
-> **Next task:** scaffold `apps/api` (NestJS) — modular monolith, `API → Service → Repository → DB`, `/api/v1`, health endpoint. REQUIRES permission (new dependencies).
+> **Phase:** Phase 0 — Foundation — ⏸️ PAUSED (stopped intentionally; resume here)
+> **Status:** Monorepo skeleton + deps installed and pinned. `@fit/shared-types` **builds (ESM+CJS+d.ts) and tests pass (5/5)**. TypeScript pinned to 5.9.3 (TS6 backed out for tooling compatibility). 2 commits on `main` (`f871595`, `ad4ea62`).
+>
+> **▶️ RESUME HERE — next task: scaffold `apps/api` (NestJS).** Already approved by user (incl. **Express** HTTP adapter) — proceed without re-asking.
+> - Structure (per instructions/claude.md): `src/main.ts` (thin bootstrap), `app.module.ts`, `config/` (zod env validation at boot), `common/` (exception filter → `{ code, message, details }`, interceptors, guards), `modules/health/` (`/api/v1/health` + `/ready`). Global prefix `/api/v1`. pino structured logging, helmet, Swagger/OpenAPI.
+> - **Approved install (pinned `-E`, into `apps/api`):**
+>   - Runtime: `@nestjs/common @nestjs/core @nestjs/platform-express @nestjs/config @nestjs/swagger reflect-metadata rxjs nestjs-pino pino-http helmet @fit/shared-types`
+>   - Dev: `@nestjs/cli @nestjs/schematics @nestjs/testing vitest supertest ts-node`
+>   - Commands: `pnpm --filter ./apps/api add -E <runtime>` then `pnpm --filter ./apps/api add -D -E <dev>`
+> - Deliverable: API boots + working health/ready endpoint. (No DB in this task.)
+>
+> **After that:** add PostgreSQL + Prisma (first migration) → Docker Compose (api + postgres + minio).
+> **Open question (unanswered):** is Docker Desktop installed? Needed before the Postgres + MinIO Compose step.
 > **Blockers:** none.
 
 ## Decisions log (locked — change only deliberately)
