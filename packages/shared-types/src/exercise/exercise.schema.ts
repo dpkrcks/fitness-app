@@ -14,8 +14,8 @@ import {
 
 /** Pre-rendered demonstration loops (the v1 figure approach). */
 export const DemoLoopUrlsSchema = z.object({
-  front: z.string().url().optional(),
-  side: z.string().url().optional(),
+  front: z.url().optional(),
+  side: z.url().optional(),
 });
 export type DemoLoopUrls = z.infer<typeof DemoLoopUrlsSchema>;
 
@@ -27,7 +27,7 @@ export const BodyMapRegionsSchema = z.object({
 export type BodyMapRegions = z.infer<typeof BodyMapRegionsSchema>;
 
 export const ExerciseSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string().min(1),
   slug: z.string().min(1),
   description: z.string().default(""),

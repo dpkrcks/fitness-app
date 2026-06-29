@@ -10,9 +10,9 @@
 
 ## Current focus
 > **Phase:** Phase 0 — Foundation
-> **Status:** Monorepo skeleton scaffolded (workspace config, `@fit/config`, `@fit/shared-types` with first contract + test) and committed. **No dependencies installed yet.**
-> **Next task:** run `pnpm install` + add pinned deps (turbo, typescript, prettier, zod, tsup, vitest), then verify `@fit/shared-types` builds + tests pass — REQUIRES permission. After that: scaffold `apps/api` (NestJS).
-> **Blockers:** none. (shared-types build/test cannot run until deps are installed.)
+> **Status:** Monorepo skeleton + deps installed and pinned. `@fit/shared-types` **builds (ESM+CJS+d.ts) and tests pass (5/5)**. TypeScript pinned to 5.9.3 (TS6 backed out for tooling compatibility).
+> **Next task:** scaffold `apps/api` (NestJS) — modular monolith, `API → Service → Repository → DB`, `/api/v1`, health endpoint. REQUIRES permission (new dependencies).
+> **Blockers:** none.
 
 ## Decisions log (locked — change only deliberately)
 - ✅ Backend: NestJS modular monolith now; Python FastAPI ML microservice in Phase 3. (`02`)
@@ -26,8 +26,8 @@
 ## Phase 0 — Foundation
 - [x] Initialize git repo + root `package.json` (private) + `pnpm-workspace.yaml` + `turbo.json` (`12`) 🟢
 - [x] Create `packages/config` (shared tsconfig/prettier presets) 🟢
-- [x] Create `packages/shared-types` skeleton (zod schemas + test + tsup build wiring) 🟡 _deps not installed yet; build/test pending_
-- [ ] `pnpm install` + add pinned deps (turbo, typescript, prettier, zod, tsup, vitest); verify shared-types builds + tests pass
+- [x] Create `packages/shared-types` (zod schemas + test + tsup build) — builds + tests pass 🟢
+- [x] `pnpm install` + pinned deps (turbo 2.10.0, typescript 5.9.3, prettier 3.9.3, zod 4.4.3, tsup 8.5.1, vitest 4.1.9); shared-types builds + 5/5 tests pass 🟢
 - [ ] Scaffold `apps/api` (NestJS) — boots, health endpoint
 - [ ] Add PostgreSQL + Prisma; first migration runs
 - [ ] Docker Compose for local dev (api + postgres + MinIO)
@@ -111,4 +111,5 @@
 ---
 
 ## Changelog (append-only — what actually shipped, newest first)
-- _(empty — add dated entries as phases complete, e.g. "Phase 0 scaffold done")_
+- 2026-06-29 — Phase 0: deps installed + pinned; `@fit/shared-types` builds (ESM/CJS/d.ts) and tests pass (5/5). TypeScript pinned 5.9.3 (TS6 reverted for tooling compat); zod 4 native API.
+- 2026-06-29 — Phase 0: monorepo skeleton scaffolded + committed (`chore: initialize monorepo scaffold`, commit `ad4ea62`, branch `main`). pnpm+Turborepo workspace, `@fit/config`, `@fit/shared-types` (first contract + test). No deps installed yet.
