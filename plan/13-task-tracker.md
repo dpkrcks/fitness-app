@@ -16,7 +16,7 @@
 > **Phase:** Phase 0 — Foundation — 🟡 in progress
 > **Status:** Monorepo skeleton + pinned deps. `@fit/shared-types` builds (ESM+CJS+d.ts), 5/5 tests. `apps/api` (NestJS 11 + Express) scaffolded + verified (committed `48e1848`). **PostgreSQL + Prisma 7 added and verified end-to-end** against **Neon** (remote): `prisma-client` generator → `src/generated/prisma`, Rust-free client connected via the **node-postgres driver adapter** (`@prisma/adapter-pg`) to Neon's **pooled** endpoint; migrations run over the **direct** endpoint via `prisma.config.ts` (`DIRECT_URL`). First migration `…_init` created the `users` table. `typecheck` + `nest build` clean; `/health`, `/ready` (real DB ping), `/docs` all 200. (Prisma work + stray `tsconfig.json` fix not yet committed.) **Workspace bumped to Node 22 LTS** (from EOL Node 20.19.0) for Expo SDK 56 / RN 0.85 compat; api re-verified (typecheck + build) on Node 22, `@types/node`→`^22`. **`apps/mobile` scaffolded + verified on a physical device** (Expo SDK 54 + expo-router + TanStack Query), wired to api `/health` via an env/LAN-aware client; Android Hermes export bundles clean (1018 modules) + mobile `tsc` clean. **Initially scaffolded on SDK 56, then downgraded to SDK 54** because the Play Store Expo Go only supports SDK 54 (SDK 56 → "project is incompatible"); the SDK-56 demo scaffold was stripped to a minimal single-screen app. **On-device verified: Expo Go (SDK 54) renders the home screen with `✅ ok` from `/health`.** (Mobile work not yet committed.)
 >
-> **▶️ RESUME HERE — start the Auth module** (register/login/JWT/refresh end-to-end: mobile → api → db). First commit all uncommitted Phase 0 work (Prisma 7, tsconfig fix, Node 22 bump, mobile scaffold) as clean conventional commits.
+> **▶️ RESUME HERE — implement the Auth module** following the locked plan in **`14-auth-module-plan.md`** (argon2 + JWT access + rotating DB-stored refresh tokens; register/login/refresh/logout/me, mobile → api → db). All prior Phase 0 work is committed (tip `f3dbee3`).
 >
 > - `apps/mobile` scaffolded (Expo SDK 54, RN 0.81.5, React 19.1.0, expo-router in `src/app`, TS) and wired: `QueryClientProvider`, env/LAN-aware API client (`EXPO_PUBLIC_API_URL` override, else auto PC LAN IP from Expo `hostUri`), `/health` screen. Bundles clean (Hermes export) + `tsc` clean + **on-device render confirmed**. ✅
 > - **Docker Compose dropped:** with DB on **Neon** and storage on **Cloudflare R2** (both hosted, free-tier), nothing remains to containerize locally for Phase 0.
@@ -67,7 +67,7 @@
   - [x] App shell: root layout (`QueryClientProvider`) + `/health` route 🟢
   - [x] API client base (`EXPO_PUBLIC_API_URL` override, else auto LAN IP from Expo `hostUri`) 🟢
   - [x] ✅ Verify: runs on device via Expo Go (SDK 54); calls api `/health` and renders `✅ ok` 🟢
-- [ ] **Auth module (register/login/JWT/refresh) end-to-end: mobile → api → db**
+- [ ] **Auth module (register/login/JWT/refresh) end-to-end: mobile → api → db** — 📋 detailed plan ready in `14-auth-module-plan.md` (argon2 + JWT access + rotating DB refresh tokens; locked, awaiting implementation)
   - [ ] DB: `User` (+ credential / refresh-token) model + migration
   - [ ] `POST /auth/register` (validate input, hash password)
   - [ ] `POST /auth/login` → access + refresh JWT
