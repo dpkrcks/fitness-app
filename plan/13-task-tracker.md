@@ -4,25 +4,23 @@
 
 ## How to use
 - Each task is a checkbox. Mark `[x]` only when **done and verified**.
+- Tasks are broken into **indented sub-tasks**. Mark a parent `[x]` only when **all** its sub-tasks are `[x]`.
+- Each group ends with a `✅ Verify:` sub-task — the concrete check that proves the work before ticking the parent.
 - Use the status tags inline when useful: `🟢 done` · `🟡 in-progress` · `🔴 blocked` · `⚪ todo`.
 - When you finish a work session, update **Current focus** below so the next session knows where to pick up.
 - Keep this honest: a half-finished task is `🟡`, not `[x]`.
 
 ## Current focus
-> **Phase:** Phase 0 — Foundation — ⏸️ PAUSED (stopped intentionally; resume here)
-> **Status:** Monorepo skeleton + deps installed and pinned. `@fit/shared-types` **builds (ESM+CJS+d.ts) and tests pass (5/5)**. TypeScript pinned to 5.9.3 (TS6 backed out for tooling compatibility). 2 commits on `main` (`f871595`, `ad4ea62`).
+> **Phase:** Phase 0 — Foundation — 🟡 in progress
+> **Status:** Monorepo skeleton + pinned deps. `@fit/shared-types` builds (ESM+CJS+d.ts), 5/5 tests. **`apps/api` (NestJS 11 + Express) scaffolded and verified**: zod-validated config, pino logging, helmet, global `/api/v1`, uniform `{ code, message, details }` error filter, Swagger at `/api/v1/docs`, health/ready endpoints. `nest build` clean; boots; all probes return 200. (Not yet committed.)
 >
-> **▶️ RESUME HERE — next task: scaffold `apps/api` (NestJS).** Already approved by user (incl. **Express** HTTP adapter) — proceed without re-asking.
-> - Structure (per instructions/claude.md): `src/main.ts` (thin bootstrap), `app.module.ts`, `config/` (zod env validation at boot), `common/` (exception filter → `{ code, message, details }`, interceptors, guards), `modules/health/` (`/api/v1/health` + `/ready`). Global prefix `/api/v1`. pino structured logging, helmet, Swagger/OpenAPI.
-> - **Approved install (pinned `-E`, into `apps/api`):**
->   - Runtime: `@nestjs/common @nestjs/core @nestjs/platform-express @nestjs/config @nestjs/swagger reflect-metadata rxjs nestjs-pino pino-http helmet @fit/shared-types`
->   - Dev: `@nestjs/cli @nestjs/schematics @nestjs/testing vitest supertest ts-node`
->   - Commands: `pnpm --filter ./apps/api add -E <runtime>` then `pnpm --filter ./apps/api add -D -E <dev>`
-> - Deliverable: API boots + working health/ready endpoint. (No DB in this task.)
+> **▶️ RESUME HERE — next task: add PostgreSQL + Prisma (first migration).**
+> - Install (pinned `-E`, into `apps/api`): `prisma` + `@prisma/client`.
+> - `prisma/schema.prisma` (datasource + generator + first `User` model), `PrismaModule` + `PrismaService` (connect/disconnect lifecycle), add `DATABASE_URL` to the zod env schema + `.env.example`, wire `/ready` to ping the DB.
+> - Deliverable: `prisma migrate dev` creates the first migration + tables.
 >
-> **After that:** add PostgreSQL + Prisma (first migration) → Docker Compose (api + postgres + minio).
-> **Open question (unanswered):** is Docker Desktop installed? Needed before the Postgres + MinIO Compose step.
-> **Blockers:** none.
+> **Open question (must resolve first):** is Docker Desktop installed? Prisma's `migrate dev` needs a running Postgres — either Docker Compose (next task) or a local/remote Postgres. May reorder the Compose task before this one if no local Postgres.
+> **Blockers:** none (resolve the Postgres availability question before running the migration).
 
 ## Decisions log (locked — change only deliberately)
 - ✅ Backend: NestJS modular monolith now; Python FastAPI ML microservice in Phase 3. (`02`)
@@ -38,44 +36,146 @@
 - [x] Create `packages/config` (shared tsconfig/prettier presets) 🟢
 - [x] Create `packages/shared-types` (zod schemas + test + tsup build) — builds + tests pass 🟢
 - [x] `pnpm install` + pinned deps (turbo 2.10.0, typescript 5.9.3, prettier 3.9.3, zod 4.4.3, tsup 8.5.1, vitest 4.1.9); shared-types builds + 5/5 tests pass 🟢
-- [ ] Scaffold `apps/api` (NestJS) — boots, health endpoint
-- [ ] Add PostgreSQL + Prisma; first migration runs
-- [ ] Docker Compose for local dev (api + postgres + MinIO)
-- [ ] Scaffold `apps/mobile` (Expo + expo-router + TanStack Query) — runs on device/simulator
-- [ ] Auth module (register/login/JWT/refresh) end-to-end: mobile → api → db
-- [ ] CI (lint + typecheck + build) via GitHub Actions
-- [ ] EAS build pipeline configured (mobile)
-- [ ] **Week-1 spike:** load one rigged GLB + play one Mixamo clip in Expo on a real low-end phone (iOS + Android) → record GO/NO-GO for real-time 3D (`11`)
+- [x] **Scaffold `apps/api` (NestJS) — boots + health endpoint** 🟢
+  - [x] Init `apps/api` (`package.json`, `tsconfig.json` extends `@fit/config`, `tsconfig.build.json`, `nest-cli.json`)
+  - [x] Install approved deps (runtime + dev, pinned `-E`; also added `zod`, `@types/express`, `@types/node`)
+  - [x] `config/` — zod env schema validated at boot (fails fast on bad env)
+  - [x] `common/` — exception filter → `{ code, message, details }` (base guard/interceptor deferred to first real use)
+  - [x] `src/main.ts` thin bootstrap: Express adapter, global prefix `/api/v1`, helmet, pino
+  - [x] `app.module.ts` wires config + health module
+  - [x] `modules/health` — `GET /api/v1/health` + `/ready`
+  - [x] Swagger/OpenAPI served at `/api/v1/docs`
+  - [x] ✅ Verify: `nest build` clean; boots; `/health` + `/ready` + `/docs` all return 200
+- [ ] **Add PostgreSQL + Prisma; first migration runs** ⬅️ RESUME HERE
+  - [ ] Install `prisma` + `@prisma/client` (pinned `-E`) in `apps/api`
+  - [ ] `prisma/schema.prisma` — datasource + generator + first model (`User`)
+  - [ ] `PrismaModule` + `PrismaService` (connect/disconnect lifecycle)
+  - [ ] `.env` + `.env.example` with `DATABASE_URL` (validated by zod config)
+  - [ ] ✅ Verify: `prisma migrate dev` creates migration + tables; `/ready` checks DB
+- [ ] **Docker Compose for local dev (api + postgres + MinIO)**
+  - [ ] Confirm Docker Desktop installed (open question — resolve first)
+  - [ ] `docker-compose.yml`: postgres service (named volume + healthcheck)
+  - [ ] Add MinIO service (API + console ports, volume)
+  - [ ] Add api service (or document running api on host against compose db)
+  - [ ] `.env` wiring + documented `docker compose up` flow
+  - [ ] ✅ Verify: `docker compose up` → api connects to postgres; MinIO console reachable
+- [ ] **Scaffold `apps/mobile` (Expo + expo-router + TanStack Query)**
+  - [ ] Init Expo app in `apps/mobile` (TypeScript + expo-router)
+  - [ ] Install + pin deps (expo-router, `@tanstack/react-query`, `@fit/shared-types`)
+  - [ ] App shell: root layout + one route + `QueryClientProvider`
+  - [ ] API client base (reads base URL from env/config)
+  - [ ] ✅ Verify: runs on simulator/device; calls api `/health` and renders result
+- [ ] **Auth module (register/login/JWT/refresh) end-to-end: mobile → api → db**
+  - [ ] DB: `User` (+ credential / refresh-token) model + migration
+  - [ ] `POST /auth/register` (validate input, hash password)
+  - [ ] `POST /auth/login` → access + refresh JWT
+  - [ ] `POST /auth/refresh` → rotate tokens
+  - [ ] Auth guard protects a sample `GET /me` route
+  - [ ] Mobile: login/register forms + secure token storage + auth state
+  - [ ] ✅ Verify: register → login → call protected route works mobile → api → db
+- [ ] **CI (lint + typecheck + build) via GitHub Actions**
+  - [ ] Workflow on push/PR: setup pnpm + node + cache
+  - [ ] `turbo run lint typecheck build` across workspace
+  - [ ] ✅ Verify: green check on a PR
+- [ ] **EAS build pipeline configured (mobile)**
+  - [ ] `eas.json` profiles (dev / preview / prod) + app config
+  - [ ] Configure project + credentials
+  - [ ] ✅ Verify: a preview build completes on EAS
+- [ ] **Week-1 spike: rigged GLB + Mixamo clip in Expo on a low-end phone** (`11`)
+  - [ ] Load one rigged GLB in Expo (three / expo-gl or similar)
+  - [ ] Play one Mixamo animation clip
+  - [ ] Test on a real low-end Android + iOS (fps, load time, memory)
+  - [ ] ✅ Verify: record GO/NO-GO for real-time 3D in the Decisions log
 
 ## Phase 1 — Exercise Library + Figure Demo + Heatmap ⭐ (First MVP)
 **Data & assets**
-- [ ] Import Free Exercise DB → normalize into `Exercise` schema (`10`)
-- [ ] Tag each exercise: `bodyPart`, `equipment`, `location` (gym/home), `difficulty`
-- [ ] Map `primaryMuscles`/`secondaryMuscles` → body-map region ids (`10`)
-- [ ] Build reusable SVG body-map figure (front/back, named regions)
-- [ ] Pre-render demonstration loops for top 30–50 exercises (Blender → video/GIF, front + side)
-- [ ] Upload loops, images, body-map assets to object storage (MinIO)
+- [ ] **Import Free Exercise DB → normalize into `Exercise` schema** (`10`)
+  - [ ] Fetch / vendor the Free Exercise DB dataset
+  - [ ] Normalizer → `Exercise` schema (zod-validated)
+  - [ ] Seed script loads exercises into DB
+  - [ ] ✅ Verify: row count + sample record matches schema
+- [ ] **Tag each exercise: `bodyPart`, `equipment`, `location` (gym/home), `difficulty`**
+  - [ ] Derive `bodyPart`, `equipment`, `difficulty` from source
+  - [ ] Classification rule for `location` (gym/home)
+  - [ ] ✅ Verify: every exercise has all 4 tags populated
+- [ ] **Map `primaryMuscles`/`secondaryMuscles` → body-map region ids** (`10`)
+  - [ ] Define canonical body-map region id list
+  - [ ] Map primary + secondary muscle names → region ids
+  - [ ] ✅ Verify: no unmapped muscle names remain
+- [ ] **Build reusable SVG body-map figure (front/back, named regions)**
+  - [ ] Source / build front + back SVG with named region paths
+  - [ ] Region ids align with the mapping table
+  - [ ] ✅ Verify: render shows every named region individually selectable
+- [ ] **Pre-render demonstration loops for top 30–50 exercises** (Blender → video/GIF, front + side)
+  - [ ] Pick the top 30–50 exercises
+  - [ ] Blender render front + side loop per exercise
+  - [ ] Export to video/GIF at target size/format
+  - [ ] ✅ Verify: loops play smoothly; file sizes acceptable
+- [ ] **Upload loops, images, body-map assets to object storage (MinIO)**
+  - [ ] Create bucket(s) + upload script
+  - [ ] Store asset URLs/keys on exercise records
+  - [ ] ✅ Verify: assets fetchable via storage URL
 
 **API (NestJS)**
-- [ ] `GET /exercises` with filters (bodyPart, equipment, location, difficulty, q, page)
-- [ ] `GET /exercises/:id`
-- [ ] `GET /body-parts`
-- [ ] `GET/POST/DELETE /me/favorites`
+- [ ] **`GET /exercises` with filters (bodyPart, equipment, location, difficulty, q, page)**
+  - [ ] Endpoint + query DTO (zod) for filters + pagination
+  - [ ] Repository query honoring all filters
+  - [ ] ✅ Verify: filter combinations return correct sets
+- [ ] **`GET /exercises/:id`**
+  - [ ] Returns full detail (asset urls + mapped muscles); 404 on missing
+  - [ ] ✅ Verify: known id returns complete record
+- [ ] **`GET /body-parts`**
+  - [ ] Endpoint returns body-part list (with counts)
+  - [ ] ✅ Verify: matches tagged data
+- [ ] **`GET/POST/DELETE /me/favorites`**
+  - [ ] `Favorite` model + migration
+  - [ ] List / add / remove endpoints (auth-guarded)
+  - [ ] ✅ Verify: favorites persist per user
 
 **Mobile**
-- [ ] Auth screens (login/register) wired to api
-- [ ] Browse screen (body-part grid + Gym/Home toggle)
-- [ ] Exercise list (filtered cards)
-- [ ] Exercise detail: demonstration loop player + steps + equipment + muscles
-- [ ] Muscle heatmap component (colors body map from exercise data)
-- [ ] Image/GIF fallback when a loop is missing
-- [ ] My List (favorites) screen
-- [ ] Minimal profile screen
+- [ ] **Auth screens (login/register) wired to api**
+  - [ ] Build login/register UI
+  - [ ] Wire to api + handle loading/error states
+  - [ ] ✅ Verify on device: register + login succeed
+- [ ] **Browse screen (body-part grid + Gym/Home toggle)**
+  - [ ] Body-part grid UI
+  - [ ] Gym/Home toggle state
+  - [ ] ✅ Verify: navigates to correctly filtered list
+- [ ] **Exercise list (filtered cards)**
+  - [ ] Card list bound to `GET /exercises` (TanStack Query)
+  - [ ] Filters + pagination wired
+  - [ ] ✅ Verify: list reflects filters
+- [ ] **Exercise detail: demonstration loop player + steps + equipment + muscles**
+  - [ ] Detail layout (player + steps + equipment + muscles)
+  - [ ] Loop player component
+  - [ ] ✅ Verify with real data on device
+- [ ] **Muscle heatmap component (colors body map from exercise data)**
+  - [ ] Color SVG regions from exercise muscle data
+  - [ ] Distinct primary vs secondary intensity
+  - [ ] ✅ Verify: colors match exercise data
+- [ ] **Image/GIF fallback when a loop is missing**
+  - [ ] Detect missing loop → render image/GIF
+  - [ ] ✅ Verify: fallback path renders cleanly
+- [ ] **My List (favorites) screen**
+  - [ ] Favorites screen bound to api
+  - [ ] Add/remove from list + detail
+  - [ ] ✅ Verify: persists across app restart
+- [ ] **Minimal profile screen**
+  - [ ] Profile screen (user info + logout)
+  - [ ] ✅ Verify: shows user + logout works
 
 **Ship**
-- [ ] Analytics + feedback instrumentation in place
-- [ ] Build distributed to testers (TestFlight / Play internal / Expo)
-- [ ] Retention/feedback collected
+- [ ] **Analytics + feedback instrumentation in place**
+  - [ ] Add analytics SDK + key events
+  - [ ] In-app feedback hook
+  - [ ] ✅ Verify: events arrive in dashboard
+- [ ] **Build distributed to testers (TestFlight / Play internal / Expo)**
+  - [ ] EAS build
+  - [ ] Distribute via TestFlight / Play internal / Expo
+  - [ ] ✅ Verify: a tester can install + launch
+- [ ] **Retention/feedback collected**
+  - [ ] Retention/feedback dashboard wired
+  - [ ] ✅ Verify: data flowing from testers
 
 **Phase 1 Definition of Done** (`05`)
 - [ ] Register/login works on a real device
@@ -86,40 +186,106 @@
 - [ ] In testers' hands with feedback tracking live
 
 ## Phase 2 — Yoga
-- [ ] Curate ~40–60 asanas (name, sanskrit, category, difficulty, benefits, cues, cautions)
-- [ ] Map poses → figure poses or curated images
-- [ ] Build 3–5 sequences (ordered poses + hold durations)
-- [ ] API: `GET /yoga/poses`, `/yoga/poses/:id`, `/yoga/sequences`, `/yoga/sequences/:id`
-- [ ] Mobile: yoga browse, pose detail, sequences list, flow player (timer)
+- [ ] **Curate ~40–60 asanas (name, sanskrit, category, difficulty, benefits, cues, cautions)**
+  - [ ] Define `Asana` schema fields
+  - [ ] Curate ~40–60 entries
+  - [ ] Seed + validate
+  - [ ] ✅ Verify: count + every record matches schema
+- [ ] **Map poses → figure poses or curated images**
+  - [ ] Source curated images or figure poses
+  - [ ] Link visuals to asanas
+  - [ ] ✅ Verify: every pose has a visual
+- [ ] **Build 3–5 sequences (ordered poses + hold durations)**
+  - [ ] `Sequence` schema (ordered poses + hold durations)
+  - [ ] Author 3–5 sequences
+  - [ ] ✅ Verify: ordering + durations correct
+- [ ] **API: `GET /yoga/poses`, `/yoga/poses/:id`, `/yoga/sequences`, `/yoga/sequences/:id`**
+  - [ ] `GET /yoga/poses` + `/yoga/poses/:id`
+  - [ ] `GET /yoga/sequences` + `/yoga/sequences/:id`
+  - [ ] ✅ Verify: responses match seeded data
+- [ ] **Mobile: yoga browse, pose detail, sequences list, flow player (timer)**
+  - [ ] Yoga browse + pose detail screens
+  - [ ] Sequences list screen
+  - [ ] Flow player with per-hold timer
+  - [ ] ✅ Verify: a full sequence runs end-to-end
 - [ ] _(optional)_ Real-time free-rotate 3D figure upgrade — only if week-1 spike passed (`11`)
 
 ## Phase 3 — Diet & Nutrition (+ Food Scan)
-- [ ] Body profile input + BMI/BMR/TDEE/macro target calculations (`07`)
-- [ ] Open Food Facts / USDA proxy + cache (`GET /foods`)
-- [ ] Barcode scan → Open Food Facts lookup
-- [ ] Manual meal logging (`POST /me/meals`, `GET /me/meals?date=`)
-- [ ] Stand up Python FastAPI ML microservice (`/infer/food-image`)
-- [ ] Food platter scan flow → editable nutrition estimate (`POST /me/meals/scan`)
-- [ ] Rule-based diet plan suggestions (`GET /me/diet-plan`)
-- [ ] Disclaimers + photo data-deletion controls
+- [ ] **Body profile input + BMI/BMR/TDEE/macro target calculations** (`07`)
+  - [ ] Profile input form + model
+  - [ ] BMI/BMR/TDEE/macro calc functions (unit-tested, in shared-types)
+  - [ ] ✅ Verify: outputs match known reference values
+- [ ] **Open Food Facts / USDA proxy + cache (`GET /foods`)**
+  - [ ] `GET /foods` proxy to OFF/USDA
+  - [ ] Cache layer
+  - [ ] ✅ Verify: lookup works + cache hit on repeat
+- [ ] **Barcode scan → Open Food Facts lookup**
+  - [ ] Mobile barcode scanner
+  - [ ] Scan → OFF lookup wired
+  - [ ] ✅ Verify: a real barcode resolves to a food
+- [ ] **Manual meal logging (`POST /me/meals`, `GET /me/meals?date=`)**
+  - [ ] `Meal` model + migration
+  - [ ] `POST /me/meals` + `GET /me/meals?date=`
+  - [ ] Mobile logging UI
+  - [ ] ✅ Verify: meals persist + query by day
+- [ ] **Stand up Python FastAPI ML microservice (`/infer/food-image`)**
+  - [ ] Scaffold FastAPI service + `/infer/food-image`
+  - [ ] Containerize + add to compose
+  - [ ] ✅ Verify: endpoint returns an inference
+- [ ] **Food platter scan flow → editable nutrition estimate (`POST /me/meals/scan`)**
+  - [ ] `POST /me/meals/scan` wires api → ML service
+  - [ ] Mobile capture + editable estimate UI
+  - [ ] ✅ Verify: edit + save produces a logged meal
+- [ ] **Rule-based diet plan suggestions (`GET /me/diet-plan`)**
+  - [ ] `GET /me/diet-plan` from profile + targets
+  - [ ] ✅ Verify: plan respects macro targets
+- [ ] **Disclaimers + photo data-deletion controls**
+  - [ ] Disclaimers UI
+  - [ ] Photo data-deletion controls
+  - [ ] ✅ Verify: deletion actually removes stored photos/data
 
 ## Phase 4 — AI Form Coach
-- [ ] On-device pose estimation (MediaPipe/MoveNet) working in the app (`08`)
-- [ ] Reference joint-angle definitions for 3–5 exercises (squat/push-up/plank/lunge/curl)
-- [ ] Comparison engine (live angles vs reference) → rule-based cues
-- [ ] Rep counting via key-joint trajectory
-- [ ] Skeleton overlay + concise feedback UX + calibration step
-- [ ] Session summary (reps, form score) persisted
+- [ ] **On-device pose estimation (MediaPipe/MoveNet) working in the app** (`08`)
+  - [ ] Integrate MediaPipe/MoveNet in the app
+  - [ ] Render landmarks from camera feed
+  - [ ] ✅ Verify: live landmarks at usable fps
+- [ ] **Reference joint-angle definitions for 3–5 exercises (squat/push-up/plank/lunge/curl)**
+  - [ ] Define reference angles per exercise
+  - [ ] ✅ Verify: angles match sample footage
+- [ ] **Comparison engine (live angles vs reference) → rule-based cues**
+  - [ ] Compare live angles vs reference → rule-based cues
+  - [ ] ✅ Verify: cue triggers on bad form
+- [ ] **Rep counting via key-joint trajectory**
+  - [ ] Rep counter from key-joint trajectory
+  - [ ] ✅ Verify: count accurate on sample reps
+- [ ] **Skeleton overlay + concise feedback UX + calibration step**
+  - [ ] Skeleton overlay + concise feedback UI
+  - [ ] Calibration step
+  - [ ] ✅ Verify: a usable coached session runs
+- [ ] **Session summary (reps, form score) persisted**
+  - [ ] Persist reps + form score
+  - [ ] ✅ Verify: summary saved + viewable
 
 ## Phase 5 — Personalization & Web
-- [ ] Plan generation combining exercises + yoga + diet + progress
-- [ ] Progress tracking, streaks, goals
-- [ ] Scaffold `apps/web` (React + Vite) — browse + dashboard
-- [ ] Reuse `@fit/shared-types` + heatmap component on web
+- [ ] **Plan generation combining exercises + yoga + diet + progress**
+  - [ ] Combine exercises + yoga + diet + progress into a plan
+  - [ ] ✅ Verify: generates a coherent plan
+- [ ] **Progress tracking, streaks, goals**
+  - [ ] Progress / streaks / goals models + UI
+  - [ ] ✅ Verify: streak + goal logic correct
+- [ ] **Scaffold `apps/web` (React + Vite) — browse + dashboard**
+  - [ ] Init React + Vite app
+  - [ ] Browse + dashboard pages
+  - [ ] ✅ Verify: web app runs + renders pages
+- [ ] **Reuse `@fit/shared-types` + heatmap component on web**
+  - [ ] Consume `@fit/shared-types` on web
+  - [ ] Port heatmap component to web
+  - [ ] ✅ Verify: heatmap renders correctly on web
 - [ ] _(optional)_ Social / sharing
 
 ---
 
 ## Changelog (append-only — what actually shipped, newest first)
+- 2026-06-30 — Phase 0: scaffolded `apps/api` (NestJS 11.1.27 on Express). zod env validation at boot, pino structured logging, helmet, global prefix `/api/v1`, uniform `{ code, message, details }` exception filter, Swagger at `/api/v1/docs`, `health`/`ready` endpoints. Added deps pinned `-E` (incl. `zod`, `@types/express`, `@types/node`). `nest build` clean; app boots; `/health` + `/ready` + `/docs` all return 200. Not yet committed.
 - 2026-06-29 — Phase 0: deps installed + pinned; `@fit/shared-types` builds (ESM/CJS/d.ts) and tests pass (5/5). TypeScript pinned 5.9.3 (TS6 reverted for tooling compat); zod 4 native API.
 - 2026-06-29 — Phase 0: monorepo skeleton scaffolded + committed (`chore: initialize monorepo scaffold`, commit `ad4ea62`, branch `main`). pnpm+Turborepo workspace, `@fit/config`, `@fit/shared-types` (first contract + test). No deps installed yet.
