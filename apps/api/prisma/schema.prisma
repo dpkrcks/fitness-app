@@ -1,0 +1,29 @@
+// Prisma schema — https://pris.ly/d/prisma-schema
+//
+// Prisma 7: the connection URL lives in `prisma.config.ts` (not here), and the
+// Rust-free client connects at runtime through a driver adapter (see
+// `src/modules/prisma/prisma.service.ts`). The generated client is emitted into
+// `src/generated/prisma` so NestJS compiles it; that folder is git-ignored.
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/generated/prisma"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Application user. Credentials and refresh tokens are added in the Auth task.
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  // Soft delete: rows are flagged, not removed, so user data stays auditable.
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([deletedAt])
+  @@map("users")
+}

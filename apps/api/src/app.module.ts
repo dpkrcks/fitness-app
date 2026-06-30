@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { validateEnv, type Env } from "./config/env.schema";
+import { PrismaModule } from "./modules/prisma/prisma.module";
 import { HealthModule } from "./modules/health/health.module";
 
 @Module({
@@ -20,6 +21,7 @@ import { HealthModule } from "./modules/health/health.module";
         return { pinoHttp: { level } };
       },
     }),
+    PrismaModule,
     HealthModule,
   ],
 })

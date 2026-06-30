@@ -12,15 +12,15 @@
 
 ## Current focus
 > **Phase:** Phase 0 — Foundation — 🟡 in progress
-> **Status:** Monorepo skeleton + pinned deps. `@fit/shared-types` builds (ESM+CJS+d.ts), 5/5 tests. **`apps/api` (NestJS 11 + Express) scaffolded and verified**: zod-validated config, pino logging, helmet, global `/api/v1`, uniform `{ code, message, details }` error filter, Swagger at `/api/v1/docs`, health/ready endpoints. `nest build` clean; boots; all probes return 200. (Not yet committed.)
+> **Status:** Monorepo skeleton + pinned deps. `@fit/shared-types` builds (ESM+CJS+d.ts), 5/5 tests. `apps/api` (NestJS 11 + Express) scaffolded + verified (committed `48e1848`). **PostgreSQL + Prisma 7 added and verified end-to-end** against **Neon** (remote): `prisma-client` generator → `src/generated/prisma`, Rust-free client connected via the **node-postgres driver adapter** (`@prisma/adapter-pg`) to Neon's **pooled** endpoint; migrations run over the **direct** endpoint via `prisma.config.ts` (`DIRECT_URL`). First migration `…_init` created the `users` table. `typecheck` + `nest build` clean; `/health`, `/ready` (real DB ping), `/docs` all 200. (Prisma work + stray `tsconfig.json` fix not yet committed.)
 >
-> **▶️ RESUME HERE — next task: add PostgreSQL + Prisma (first migration).**
-> - Install (pinned `-E`, into `apps/api`): `prisma` + `@prisma/client`.
-> - `prisma/schema.prisma` (datasource + generator + first `User` model), `PrismaModule` + `PrismaService` (connect/disconnect lifecycle), add `DATABASE_URL` to the zod env schema + `.env.example`, wire `/ready` to ping the DB.
-> - Deliverable: `prisma migrate dev` creates the first migration + tables.
+> **▶️ RESUME HERE — next task: Docker Compose for local dev.**
+> - **Postgres is now Neon (remote)**, so Compose is primarily for **MinIO** (object storage, Phase 1 assets). Decide whether to also add a *local* Postgres service as an offline-dev alternative to Neon.
+> - `docker-compose.yml`: MinIO (API + console ports, named volume, healthcheck); optionally postgres; document the `docker compose up` flow + `.env` wiring.
+> - **Open question (resolve first):** is Docker Desktop installed? If not, this task can be deferred and we jump to **Scaffold `apps/mobile` (Expo)** — Neon already unblocks the API.
 >
-> **Open question (must resolve first):** is Docker Desktop installed? Prisma's `migrate dev` needs a running Postgres — either Docker Compose (next task) or a local/remote Postgres. May reorder the Compose task before this one if no local Postgres.
-> **Blockers:** none (resolve the Postgres availability question before running the migration).
+> **Decisions resolved this session:** DB = Neon Postgres (dev branch for migrations); runtime = pooled endpoint via adapter-pg; migrations = direct endpoint via `DIRECT_URL`. TS pinned 5.9.3 needs `ignoreDeprecations: "5.0"` (editor's newer bundled TS disagrees — cosmetic; consider pointing the IDE at the workspace TS).
+> **Blockers:** none.
 
 ## Decisions log (locked — change only deliberately)
 - ✅ Backend: NestJS modular monolith now; Python FastAPI ML microservice in Phase 3. (`02`)
@@ -46,13 +46,13 @@
   - [x] `modules/health` — `GET /api/v1/health` + `/ready`
   - [x] Swagger/OpenAPI served at `/api/v1/docs`
   - [x] ✅ Verify: `nest build` clean; boots; `/health` + `/ready` + `/docs` all return 200
-- [ ] **Add PostgreSQL + Prisma; first migration runs** ⬅️ RESUME HERE
-  - [ ] Install `prisma` + `@prisma/client` (pinned `-E`) in `apps/api`
-  - [ ] `prisma/schema.prisma` — datasource + generator + first model (`User`)
-  - [ ] `PrismaModule` + `PrismaService` (connect/disconnect lifecycle)
-  - [ ] `.env` + `.env.example` with `DATABASE_URL` (validated by zod config)
-  - [ ] ✅ Verify: `prisma migrate dev` creates migration + tables; `/ready` checks DB
-- [ ] **Docker Compose for local dev (api + postgres + MinIO)**
+- [x] **Add PostgreSQL + Prisma; first migration runs** 🟢
+  - [x] Install `prisma` + `@prisma/client` + `@prisma/adapter-pg` + `pg` + `dotenv` (pinned `-E`) in `apps/api`
+  - [x] `prisma/schema.prisma` — `prisma-client` generator (→ `src/generated/prisma`) + `User` model (uuid id, unique email, timestamps, soft-delete `deletedAt` + index)
+  - [x] `PrismaModule` (@Global) + `PrismaService` (adapter-pg, pool sizing, connect/disconnect lifecycle, `ping()`)
+  - [x] `prisma.config.ts` → `DIRECT_URL`; `DATABASE_URL` (required) + `DIRECT_URL` (optional) in zod env schema; `.env`/`.env.example` updated
+  - [x] ✅ Verify: `prisma migrate dev --name init` created `users` table on Neon; `/ready` pings DB → 200; typecheck + build clean
+- [ ] **Docker Compose for local dev (MinIO; postgres now via Neon)** ⬅️ RESUME HERE
   - [ ] Confirm Docker Desktop installed (open question — resolve first)
   - [ ] `docker-compose.yml`: postgres service (named volume + healthcheck)
   - [ ] Add MinIO service (API + console ports, volume)
@@ -286,6 +286,7 @@
 ---
 
 ## Changelog (append-only — what actually shipped, newest first)
+- 2026-06-30 — Phase 0: added **PostgreSQL + Prisma 7** to `apps/api`, verified end-to-end on **Neon**. Pinned deps `@prisma/client` 7.8.0, `prisma` 7.8.0, `@prisma/adapter-pg` 7.8.0, `pg` 8.22.0, `dotenv` 17.4.2, `@types/pg` 8.20.0. New `prisma-client` generator emits to `src/generated/prisma` (git-ignored); Rust-free client connects via node-postgres **driver adapter** to Neon **pooled** endpoint (`DATABASE_URL`); CLI/migrations use **direct** endpoint (`DIRECT_URL`) via `prisma.config.ts`. `PrismaModule` (@Global) + `PrismaService` (pool max/idle/conn timeouts, connect/disconnect, `ping()`); `/ready` now pings the DB (503 on failure). First migration `20260630051541_init` → `users` table (uuid PK, unique email, timestamps, soft-delete `deleted_at` + index). Also fixed stray uncommitted `tsconfig.json` (`ignoreDeprecations` `"6.0"`→`"5.0"` for pinned TS 5.9.3). `typecheck` + `nest build` clean; `/health`, `/ready`, `/docs` all 200. Not yet committed.
 - 2026-06-30 — Phase 0: scaffolded `apps/api` (NestJS 11.1.27 on Express). zod env validation at boot, pino structured logging, helmet, global prefix `/api/v1`, uniform `{ code, message, details }` exception filter, Swagger at `/api/v1/docs`, `health`/`ready` endpoints. Added deps pinned `-E` (incl. `zod`, `@types/express`, `@types/node`). `nest build` clean; app boots; `/health` + `/ready` + `/docs` all return 200. Not yet committed.
 - 2026-06-29 — Phase 0: deps installed + pinned; `@fit/shared-types` builds (ESM/CJS/d.ts) and tests pass (5/5). TypeScript pinned 5.9.3 (TS6 reverted for tooling compat); zod 4 native API.
 - 2026-06-29 — Phase 0: monorepo skeleton scaffolded + committed (`chore: initialize monorepo scaffold`, commit `ad4ea62`, branch `main`). pnpm+Turborepo workspace, `@fit/config`, `@fit/shared-types` (first contract + test). No deps installed yet.

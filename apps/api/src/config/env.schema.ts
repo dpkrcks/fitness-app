@@ -12,6 +12,12 @@ export const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .default("info"),
+  // App runtime connection (Neon POOLED endpoint) — consumed by the Prisma
+  // driver adapter. Required: the app refuses to boot without a database.
+  DATABASE_URL: z.string().url(),
+  // Direct (unpooled) endpoint used ONLY by the Prisma CLI for migrations,
+  // loaded via prisma.config.ts. Optional at app runtime.
+  DIRECT_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
