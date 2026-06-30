@@ -1,13 +1,11 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { colors, type ColorScheme } from '@/theme/tokens';
 
+/**
+ * Resolves the active semantic color set from the design tokens. Honors the
+ * system light/dark preference; falls back to dark (the app's primary look).
+ */
 export function useTheme() {
-  const scheme = useColorScheme() ?? 'light';
-
-  return Colors[scheme];
+  const scheme = (useColorScheme() ?? 'dark') as ColorScheme;
+  return colors[scheme];
 }

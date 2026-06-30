@@ -26,6 +26,7 @@ async function bootstrap(): Promise<void> {
     .setTitle("Fitness API")
     .setDescription("HTTP API for the fitness platform.")
     .setVersion("1.0")
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("api/v1/docs", app, document);

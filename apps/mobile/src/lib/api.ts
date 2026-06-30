@@ -44,14 +44,68 @@ export type HealthResponse = {
   timestamp: string;
 };
 
-async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`);
-  if (!response.ok) {
-    throw new Error(`GET ${path} failed: ${response.status} ${response.statusText}`);
+/** Uniform error body the API returns: `{ code, message, details? }`. */
+export type ApiErrorBody = {
+  code: string;
+  message: string;
+  details?: unknown;
+};
+
+/** Thrown for any non-2xx API response; carries the parsed error body. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+    readonly details?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
   }
-  return (await response.json()) as T;
+}
+
+type RequestOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  /** Bearer access token for protected routes. */
+  token?: string | null;
+};
+
+/**
+ * Single fetch wrapper for the API: serializes JSON, attaches the bearer token,
+ * and normalizes errors into `ApiError`. 204 responses resolve to `undefined`.
+ */
+export async function apiRequest<T>(
+  path: string,
+  { method = 'GET', body, token }: RequestOptions = {},
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (response.status === 204) return undefined as T;
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : undefined;
+
+  if (!response.ok) {
+    const err = (data ?? {}) as Partial<ApiErrorBody>;
+    throw new ApiError(
+      response.status,
+      err.code ?? 'UNKNOWN',
+      err.message ?? response.statusText,
+      err.details,
+    );
+  }
+  return data as T;
 }
 
 export function getHealth(): Promise<HealthResponse> {
-  return apiGet<HealthResponse>('/health');
+  return apiRequest<HealthResponse>('/health');
 }

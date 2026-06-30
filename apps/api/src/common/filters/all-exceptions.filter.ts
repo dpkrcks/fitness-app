@@ -60,17 +60,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // array (e.g. validation errors) which we surface under `details`.
     const obj = res as Record<string, unknown>;
     const rawMessage = obj["message"];
-    if (Array.isArray(rawMessage)) {
-      return {
-        code: this.codeFor(status),
-        message: exception.message,
-        details: rawMessage,
-      };
-    }
-    return {
-      code: this.codeFor(status),
-      message: typeof rawMessage === "string" ? rawMessage : exception.message,
-    };
+    // Surface structured validation details: either an explicit `details` field
+    // (e.g. from ZodValidationPipe) or Nest's array-style `message`.
+    const details =
+      obj["details"] ?? (Array.isArray(rawMessage) ? rawMessage : undefined);
+    const message = Array.isArray(rawMessage)
+      ? exception.message
+      : typeof rawMessage === "string"
+        ? rawMessage
+        : exception.message;
+    // Honor an explicit, stable `code` thrown by the app (e.g. EMAIL_NOT_VERIFIED)
+    // so clients can branch on it; otherwise derive one from the HTTP status.
+    const code =
+      typeof obj["code"] === "string" ? (obj["code"] as string) : this.codeFor(status);
+    return { code, message, details };
   }
 
   /** Maps a status code to a stable string code, e.g. 404 -> "NOT_FOUND". */

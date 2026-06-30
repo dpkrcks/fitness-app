@@ -15,15 +15,82 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Application user. Credentials and refresh tokens are added in the Auth task.
+/// Application user.
 model User {
-  id        String    @id @default(uuid()) @db.Uuid
-  email     String    @unique
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id    String @id @default(uuid()) @db.Uuid
+  email String @unique
+  // Nullable: OAuth-only users (added in plan/15) have no password. The
+  // email/password register flow always sets this.
+  passwordHash String?   @map("password_hash")
+  // Null until the email OTP is verified. Login is refused (403) while null;
+  // tokens are only issued once this is set. (plan/15 §B)
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
   // Soft delete: rows are flagged, not removed, so user data stays auditable.
   deletedAt DateTime? @map("deleted_at")
 
+  refreshTokens RefreshToken[]
+  profile       Profile?
+
   @@index([deletedAt])
   @@map("users")
+}
+
+/// 1:1 onboarding profile, created after OTP verification. PK = FK to User.
+/// `displayName` + `dateOfBirth` are required at creation; the remaining body
+/// metrics are nullable and filled in later (consumed in Phase 3). (plan/15 §C)
+model Profile {
+  userId        String   @id @map("user_id") @db.Uuid
+  displayName   String   @map("display_name")
+  dateOfBirth   DateTime @map("date_of_birth") @db.Date
+  units         String   @default("metric")
+  sex           String?
+  heightCm      Int?     @map("height_cm")
+  weightKg      Float?   @map("weight_kg")
+  goal          String?
+  activityLevel String?  @map("activity_level")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+/// Rotating refresh tokens. The opaque token itself is never stored — only its
+/// SHA-256 hash (deterministic, so it's indexable for O(1) lookup). Rotation +
+/// reuse-detection live in the auth token service.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// Single-use OTP challenges (email now; channel-agnostic for SMS later). Only
+/// the SHA-256 hash of the 6-digit code is stored. `userId` is nullable so a
+/// code can be issued for a pre-account identifier. Security relies on strict
+/// rate-limiting: short expiry, capped attempts, resend cooldown. (plan/15 §B)
+model VerificationCode {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  channel      String // "EMAIL" | "SMS"
+  identifier   String // email (or E.164 phone later)
+  purpose      String // "SIGNUP" | "LOGIN" | "PASSWORD_RESET"
+  codeHash     String    @map("code_hash")
+  expiresAt    DateTime  @map("expires_at")
+  attemptCount Int       @default(0) @map("attempt_count")
+  consumedAt   DateTime? @map("consumed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([identifier, purpose])
+  @@map("verification_codes")
 }

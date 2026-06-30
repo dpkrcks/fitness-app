@@ -1,103 +1,73 @@
-import { useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect, useRouter } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { Logo } from '@/components/brand/logo';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { API_BASE_URL, getHealth } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Screen } from '@/components/ui/screen';
+import { Spinner } from '@/components/ui/spinner';
+import { useAuth } from '@/lib/auth/auth-context';
+import { motion, spacing } from '@/theme/tokens';
 
-export default function HomeScreen() {
-  const health = useQuery({ queryKey: ['health'], queryFn: getHealth });
+/** Start / splash screen. Doubles as the launch screen while auth bootstraps. */
+export default function StartScreen() {
+  const { status } = useAuth();
+  const router = useRouter();
+
+  // Already signed in → straight into the app.
+  if (status === 'authenticated') return <Redirect href="/profile" />;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="subtitle">API health</ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <Field label="Endpoint">
-            <ThemedText type="code">{`${API_BASE_URL}/health`}</ThemedText>
-          </Field>
-
-          {health.isPending && (
-            <ThemedView type="backgroundElement" style={styles.statusRow}>
-              <ActivityIndicator />
-              <ThemedText type="small">Checking…</ThemedText>
-            </ThemedView>
-          )}
-
-          {health.isError && (
-            <Field label="Status">
-              <ThemedText type="smallBold">❌ unreachable</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {health.error.message}
-              </ThemedText>
-            </Field>
-          )}
-
-          {health.isSuccess && (
-            <>
-              <Field label="Status">
-                <ThemedText type="smallBold">✅ {health.data.status}</ThemedText>
-              </Field>
-              <Field label="Server time">
-                <ThemedText type="small">{health.data.timestamp}</ThemedText>
-              </Field>
-            </>
-          )}
-        </ThemedView>
-
-        <ThemedText
-          type="linkPrimary"
-          style={styles.retry}
-          onPress={() => health.refetch()}
-        >
-          Re-check
+    <Screen>
+      <Animated.View
+        entering={FadeIn.duration(motion.duration.slow)}
+        style={styles.hero}
+      >
+        <Logo />
+        <ThemedText type="body" themeColor="textMuted" style={styles.tagline}>
+          Train smarter. Move better. Every day.
         </ThemedText>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
+      </Animated.View>
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <ThemedView type="backgroundElement" style={styles.field}>
-      <ThemedText type="smallBold" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-      {children}
-    </ThemedView>
+      {status === 'loading' ? (
+        <View style={[styles.actions, styles.center]}>
+          <Spinner />
+        </View>
+      ) : (
+        <Animated.View
+          entering={FadeInDown.delay(150).duration(motion.duration.slow)}
+          style={styles.actions}
+        >
+          <Button label="Get started" onPress={() => router.push('/register')} />
+          <View style={styles.loginRow}>
+            <ThemedText type="small" themeColor="textMuted">
+              Already have an account?
+            </ThemedText>
+            <ThemedText type="linkPrimary" onPress={() => router.push('/login')}>
+              Log in
+            </ThemedText>
+          </View>
+        </Animated.View>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  hero: {
     flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    padding: Spacing.four,
-    gap: Spacing.four,
-  },
-  card: {
-    gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.three,
-  },
-  field: {
-    gap: Spacing.one,
-  },
-  statusRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    justifyContent: 'center',
+    gap: spacing.three,
   },
-  retry: {
-    alignSelf: 'flex-start',
+  tagline: { textAlign: 'center' },
+  actions: { gap: spacing.three, paddingBottom: spacing.two },
+  center: { alignItems: 'center' },
+  loginRow: {
+    flexDirection: 'row',
+    gap: spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
